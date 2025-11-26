@@ -1,5 +1,6 @@
 import { CONFIG } from './config.js';
 import { cache, sessionCache } from './cache.js';
+import { shortenAddress } from './utils.js';
 
 const rateLimiter = {
   tokens: CONFIG.rateLimit.maxRequests,
@@ -80,16 +81,6 @@ function extractMetadata(items) {
 }
 
 /**
- * Shorten address for display
- * @param {string} address 
- * @returns {string}
- */
-function shortenAddress(address) {
-  if (!address || address.length < 20) return address;
-  return `${address.slice(0, 15)}...${address.slice(-6)}`;
-}
-
-/**
  * Fetch metadata for multiple resources (with caching)
  * Includes divisibility from fungible resource details
  * @param {string[]} addresses - Resource addresses
@@ -128,7 +119,7 @@ export async function getResourceMetadata(addresses) {
       
       const resourceData = {
         address: item.address,
-        name: meta.name || shortenAddress(item.address),
+        name: meta.name || shortenAddress(item.address, 15, 6),
         symbol: meta.symbol || '',
         iconUrl: meta.icon_url || null,
         description: meta.description || '',

@@ -27,11 +27,6 @@ export const CONFIG = {
   }
 };
 
-// Well-known resource addresses for Stokenet
-export const KNOWN_RESOURCES = {
-  XRD: 'resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc'
-};
-
 // For mainnet deployment, change to:
 // networkId: 1,
 // gatewayUrl: 'https://mainnet.radixdlt.com',

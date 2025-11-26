@@ -213,12 +213,3 @@ export function validateAmount(value, maxAmount, divisibility = 18) {
   
   return { valid: true };
 }
-
-/**
- * Sleep for a specified duration
- * @param {number} ms 
- * @returns {Promise<void>}
- */
-export function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
