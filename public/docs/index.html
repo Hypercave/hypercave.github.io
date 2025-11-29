@@ -31,19 +31,13 @@
 
     body {
       font-family: 'Freckle Face', cursive;
-      background-color: var(--bg-dark);
-      background-image: url('../hypercave.png');
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-      background-attachment: fixed;
       min-height: 100vh;
       color: var(--text-light);
       line-height: 1.8;
       position: relative;
     }
 
-    /* Fixed background for mobile browsers that don't support background-attachment: fixed */
+    /* Fixed background layer that works on all browsers including mobile */
     body::before {
       content: '';
       position: fixed;
