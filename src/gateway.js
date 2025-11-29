@@ -301,30 +301,30 @@ export async function previewTransaction(manifest) {
  */
 export function parseBalancesFromReceipt(receipt, resourceAddresses) {
   const balances = {};
-  
+
   for (const addr of resourceAddresses) {
     balances[addr] = null;
   }
-  
+
   try {
     if (receipt?.status !== 'Succeeded') {
       console.warn('Preview transaction failed:', receipt?.status);
       return balances;
     }
-    
+
     const outputs = receipt.output || [];
     if (outputs.length === 0) return balances;
-    
+
     const lastOutput = outputs[outputs.length - 1];
     const programmaticJson = lastOutput?.programmatic_json;
-    
+
     if (!programmaticJson) return balances;
-    
+
     const elements = programmaticJson.elements || programmaticJson.fields || [];
-    
+
     for (let i = 0; i < resourceAddresses.length && i < elements.length; i++) {
       const element = elements[i];
-      
+
       if (element.variant_id === '1' || element.variant_name === 'Some') {
         const decimalValue = element.fields?.[0]?.value;
         balances[resourceAddresses[i]] = decimalValue || '0';
@@ -333,6 +333,70 @@ export function parseBalancesFromReceipt(receipt, resourceAddresses) {
   } catch (e) {
     console.error('Failed to parse balances from receipt:', e);
   }
-  
+
   return balances;
+}
+
+/**
+ * Get all unique resource addresses stored in the cave's KVS
+ * The KVS keys are ResourceAddress values directly
+ * Uses session cache to avoid repeated API calls
+ * @returns {Promise<string[]>} - Array of unique resource addresses in cave
+ */
+export async function getAllCaveTokens() {
+  const cacheKey = 'cave_tokens';
+
+  // Check session cache first
+  const cached = sessionCache.get(cacheKey);
+  if (cached) {
+    console.log('Using cached cave tokens:', cached);
+    return cached;
+  }
+
+  const resourceAddresses = new Set();
+  let cursor = null;
+
+  try {
+    do {
+      const requestBody = {
+        key_value_store_address: CONFIG.caveKvsAddress,
+        limit_per_page: 100
+      };
+
+      if (cursor) {
+        requestBody.cursor = cursor;
+      }
+
+      const data = await gatewayFetch('/state/key-value-store/keys', requestBody);
+
+      // Parse each key to extract resource addresses
+      for (const item of data.items || []) {
+        try {
+          // The key is directly a ResourceAddress
+          const keyData = item.key?.programmatic_json;
+
+          if (keyData && keyData.kind === 'Reference' && keyData.type_name === 'ResourceAddress') {
+            if (keyData.value) {
+              resourceAddresses.add(keyData.value);
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to parse KVS key:', e);
+        }
+      }
+
+      cursor = data.next_cursor;
+    } while (cursor);
+
+    const result = Array.from(resourceAddresses);
+    console.log('Found tokens in cave:', result);
+
+    // Cache for the session (invalidated after IN CAVE transactions)
+    sessionCache.set(cacheKey, result, CONFIG.cacheTtl.accountResources);
+
+    return result;
+  } catch (e) {
+    console.error('Failed to fetch cave tokens from KVS:', e);
+    return [];
+  }
 }

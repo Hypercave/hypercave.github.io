@@ -306,18 +306,19 @@ export class ModalUI {
     }
     
     let html = '';
-    
+
     for (const f of available) {
-      const displayName = f.symbol || f.name || 'NO NAME TOKEN';
+      const tokenName = f.name || f.symbol || 'UNKNOWN TOKEN';
+      const tokenTicker = f.symbol || '';
       const balanceText = this.mode === 'in' ? formatAmount(f.amount) : '';
-      const addressShort = f.resourceAddress.slice(0, 20) + '...';
-      
+
       html += `
         <div class="dropdown-item" data-address="${escapeHtml(f.resourceAddress)}">
           <img src="${getIconUrl(f.iconUrl)}" alt="" onerror="this.style.visibility='hidden'">
           <div class="info">
-            <div class="name">${escapeHtml(displayName)}</div>
-            ${balanceText ? `<div class="balance">HAVE: ${escapeHtml(balanceText)}</div>` : `<div class="sub">${escapeHtml(addressShort)}</div>`}
+            <div class="name">${escapeHtml(tokenName)}</div>
+            <div class="sub">${escapeHtml(tokenTicker)}</div>
+            ${balanceText ? `<div class="balance">HAVE: ${escapeHtml(balanceText)}</div>` : ''}
           </div>
         </div>
       `;
@@ -453,12 +454,16 @@ export class ModalUI {
       // Format the amount for display in the input field
       const displayAmount = r.amount ? formatAmount(r.amount, r.divisibility) : '';
 
+      const tokenName = r.name || r.symbol || 'UNKNOWN';
+      const tokenTicker = r.symbol || '';
+
       html += `
         <div class="resource-item" data-index="${i}">
           <img src="${getIconUrl(r.iconUrl)}" alt="" onerror="this.style.visibility='hidden'">
           <div class="info">
-            <div class="name">${escapeHtml(r.symbol)}</div>
-            ${showAmountInput ? `<div class="sub">${escapeHtml(balanceDisplay)}</div>` : `<div class="sub">${escapeHtml(addressShort)}</div>`}
+            <div class="name">${escapeHtml(tokenName)}</div>
+            <div class="sub" style="opacity: 0.7;">${escapeHtml(tokenTicker)}</div>
+            ${showAmountInput ? `<div class="balance">${escapeHtml(balanceDisplay)}</div>` : `<div class="sub">${escapeHtml(addressShort)}</div>`}
           </div>
           ${showAmountInput ? `
             ${showAllButton ? `<button class="max-btn" data-index="${i}">ALL</button>` : ''}
@@ -586,7 +591,8 @@ export class ModalUI {
 
     for (const [address, amount] of Object.entries(this.caveBalancesData)) {
       const meta = this.caveResourceMetadata[address] || {};
-      const displayName = meta.symbol || meta.name || 'NO NAME';
+      const tokenName = meta.name || meta.symbol || 'UNKNOWN TOKEN';
+      const tokenTicker = meta.symbol || '';
       const isZero = amount === null || amount === '0' || parseFloat(amount) === 0;
 
       // Make clickable ONLY in OUT mode and not zero (not in LOOK mode)
@@ -597,7 +603,10 @@ export class ModalUI {
       html += `
         <div class="balance-item ${clickableClass}" ${clickableAttr}>
           <img src="${getIconUrl(meta.iconUrl)}" alt="" onerror="this.style.visibility='hidden'">
-          <span class="name">${escapeHtml(displayName)}</span>
+          <div class="token-info">
+            <div class="name">${escapeHtml(tokenName)}</div>
+            <div class="ticker" style="opacity: 0.7; font-size: 0.9em;">${escapeHtml(tokenTicker)}</div>
+          </div>
           <span class="amount ${isZero ? 'zero' : ''}">
             ${amount === null ? 'NO TOKEN' : formatAmount(amount)}
           </span>

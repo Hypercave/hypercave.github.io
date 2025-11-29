@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@radix-ui/themes": "^3.2.1",
     "@radixdlt/radix-dapp-toolkit": "^2.1.1"
   },
   "devDependencies": {

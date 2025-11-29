@@ -5,13 +5,14 @@ import {
 } from '@radixdlt/radix-dapp-toolkit';
 
 import { CONFIG } from './config.js';
-import { sessionCache, permanentResourceCache } from './cache.js';
-import { 
-  getAccountFungibles, 
+import { sessionCache } from './cache.js';
+import {
+  getAccountFungibles,
   getAccountNonFungibles,
   getResourceMetadata,
   previewTransaction,
-  parseBalancesFromReceipt
+  parseBalancesFromReceipt,
+  getAllCaveTokens
 } from './gateway.js';
 import { 
   buildInCaveManifest, 
@@ -263,22 +264,27 @@ async function openModal(mode) {
       }
       
     } else {
-      // OUT CAVE & LOOK CAVE: Load from permanent cache + NFTs from account
+      // OUT CAVE & LOOK CAVE: Load all tokens from cave KVS + NFTs from account
       nftCollections = await getAccountNonFungibles(currentAccount.address);
-      
+
       // Validate we have NFTs
       if (nftCollections.length === 0) {
         setStatus('NO NFT! ME NEED NFT USE CAVE.', 'error');
         return;
       }
-      
-      // Load from permanent cache
-      const cachedResources = permanentResourceCache.getAll();
-      fungibles = Object.keys(cachedResources).map(ticker => ({
-        resourceAddress: cachedResources[ticker].address,
-        symbol: ticker,
-        iconUrl: cachedResources[ticker].iconUrl,
-        name: ticker,
+
+      // Query all unique resource addresses stored in the cave
+      const resourceAddresses = await getAllCaveTokens();
+
+      // Fetch metadata for all discovered tokens
+      const metadata = await getResourceMetadata(resourceAddresses);
+
+      // Convert to fungibles format
+      fungibles = resourceAddresses.map(address => ({
+        resourceAddress: address,
+        symbol: metadata[address]?.symbol || metadata[address]?.name || 'UNKNOWN',
+        iconUrl: metadata[address]?.iconUrl || null,
+        name: metadata[address]?.name || '',
         amount: '0' // Not relevant for OUT/LOOK
       }));
     }
@@ -345,15 +351,9 @@ async function handleTransaction(data) {
       throw new Error(result.error.message || 'ME NO DO! YOU SAY NO!');
     }
     
-    // Success - add resources to permanent cache if IN CAVE
+    // Success - update UI cache if IN CAVE
     if (mode === 'in') {
-      const resourcesToCache = resources.map(r => ({
-        ticker: r.symbol,
-        address: r.resourceAddress,
-        iconUrl: r.iconUrl
-      }));
-      permanentResourceCache.addMultiple(resourcesToCache);
-      console.log('Added resources to permanent cache:', resourcesToCache);
+      console.log('IN CAVE transaction successful');
 
       // Update cave balances if we've looked them up
       for (const resource of resources) {
@@ -364,10 +364,12 @@ async function handleTransaction(data) {
         });
       }
 
-      // Invalidate only account fungibles cache (balances changed)
+      // Invalidate account caches (balances changed)
       sessionCache.remove(`fungibles:${currentAccount.address}`);
       sessionCache.remove(`nfts:${currentAccount.address}`);
-      console.log('Invalidated account cache after IN CAVE transaction');
+      // Invalidate cave tokens cache (new tokens may have been added)
+      sessionCache.remove('cave_tokens');
+      console.log('Invalidated account and cave tokens cache after IN CAVE transaction');
     } else if (mode === 'out') {
       // Update cave balances by subtracting the amounts taken out
       for (const resource of resources) {

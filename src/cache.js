@@ -4,7 +4,6 @@
  */
 
 const CACHE_PREFIX = 'hypercave_';
-const RESOURCE_CACHE_KEY = 'resource_cache';
 
 export const cache = {
   /**
@@ -128,78 +127,6 @@ export const sessionCache = {
   }
 };
 
-/**
- * Permanent resource cache for all discovered resources
- * Never expires - stores resources that have been deposited in cave
- */
-
-export const permanentResourceCache = {
-  /**
-   * Get all cached resources
-   * @returns {object} - Map of ticker -> {address, iconUrl}
-   */
-  getAll() {
-    try {
-      const item = localStorage.getItem(CACHE_PREFIX + RESOURCE_CACHE_KEY);
-      if (!item) return {};
-      return JSON.parse(item);
-    } catch {
-      return {};
-    }
-  },
-
-  /**
-   * Add a resource to permanent cache
-   * @param {string} ticker - Resource symbol/ticker
-   * @param {string} address - Resource address
-   * @param {string|null} iconUrl - Icon URL
-   */
-  add(ticker, address, iconUrl) {
-    try {
-      const resources = this.getAll();
-      resources[ticker] = {
-        address,
-        iconUrl: iconUrl || null
-      };
-      localStorage.setItem(CACHE_PREFIX + RESOURCE_CACHE_KEY, JSON.stringify(resources));
-    } catch (e) {
-      console.warn('Failed to add resource to permanent cache:', e);
-    }
-  },
-
-  /**
-   * Add multiple resources at once
-   * @param {Array<{ticker: string, address: string, iconUrl: string|null}>} resources
-   */
-  addMultiple(resources) {
-    try {
-      const cache = this.getAll();
-      for (const r of resources) {
-        cache[r.ticker] = {
-          address: r.address,
-          iconUrl: r.iconUrl || null
-        };
-      }
-      localStorage.setItem(CACHE_PREFIX + RESOURCE_CACHE_KEY, JSON.stringify(cache));
-    } catch (e) {
-      console.warn('Failed to add resources to permanent cache:', e);
-    }
-  },
-
-  /**
-   * Get resource by ticker
-   * @param {string} ticker
-   * @returns {{address: string, iconUrl: string|null}|null}
-   */
-  get(ticker) {
-    const all = this.getAll();
-    return all[ticker] || null;
-  },
-
-  /**
-   * Clear all permanent resources
-   */
-  clear() {
-    localStorage.removeItem(CACHE_PREFIX + RESOURCE_CACHE_KEY);
-  }
-};
+// NOTE: permanentResourceCache has been removed
+// Token discovery now happens by querying the cave's KeyValueStore directly via the Gateway API
+// See getAllCaveTokens() in gateway.js
